@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { Postgress } from "../app/infrastructure/Postgres";
+import { Postgress } from "../api/infrastructure/Postgres";
 import 'dotenv/config'
 
 function createPgPool(): Pool {

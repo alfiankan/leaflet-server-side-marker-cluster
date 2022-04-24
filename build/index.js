@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var express = require("express");
 require("dotenv/config");
-var Postgres_1 = require("./app/infrastructure/Postgres");
-var Locations_1 = require("./app/repositories/Locations");
-var LocationCluster_1 = require("./app/usecases/LocationCluster");
+var Postgres_1 = require("./api/infrastructure/Postgres");
+var Locations_1 = require("./api/repositories/Locations");
+var LocationCluster_1 = require("./api/usecases/LocationCluster");
 function startApi() {
     var app = express();
     var host = String(process.env.PG_HOST);
@@ -22,9 +22,13 @@ function startApi() {
         var north = Number(req.query.north);
         var zoom = Number(req.query.zoom);
         console.log(west, south, east, north, zoom);
-        var result = locationClusterUseCase.getClusteredPoint(west, south, east, north, zoom);
-        res.json(result);
+        locationClusterUseCase.getClusteredPoint(west, south, east, north, zoom).then(function (result) {
+            res.json(result);
+        }).catch(function (error) {
+            res.json(error);
+        });
     });
+    app.use(express.static('public'));
     app.listen(3000, function () {
         console.log('server running');
     });

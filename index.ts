@@ -1,14 +1,14 @@
 import { Express, Request, Response } from 'express'
 import express = require("express")
 import 'dotenv/config'
-import { Postgress } from './app/infrastructure/Postgres';
-import { Locations } from './app/repositories/Locations';
-import { LocationCluster } from './app/usecases/LocationCluster';
+import { Postgress } from './api/infrastructure/Postgres'
+import { Locations } from './api/repositories/Locations'
+import { LocationCluster } from './api/usecases/LocationCluster'
 
 function startApi() {
 
     const app: Express = express();
-    
+
     const host = String(process.env.PG_HOST)
     const username = String(process.env.PG_USERNAME)
     const password = String(process.env.PG_PASSWORD)
@@ -27,10 +27,15 @@ function startApi() {
         const zoom = Number(req.query.zoom)
         console.log(west, south, east, north, zoom)
 
-        const result = locationClusterUseCase.getClusteredPoint(west, south, east, north, zoom)
+        locationClusterUseCase.getClusteredPoint(west, south, east, north, zoom).then(result => {
+            res.json(result)
+        }).catch(error => {
+            res.json(error)
+        })
 
-        res.json(result)
     })
+
+    app.use(express.static('public'))
 
     app.listen(3000, () => {
         console.log('server running')

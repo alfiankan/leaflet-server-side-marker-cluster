@@ -23,13 +23,14 @@ pool.query(`DELETE FROM public.marker_cluster;`, (error, results) => {
 let total = 0
 rows.map(coordinate => {
     const coor = coordinate.replace('\r', '').split(',')
-    pool.query(`INSERT INTO public.marker_cluster(location) VALUES (ST_GeomFromText('Point(${coor[0]} ${coor[1]})'));`, (error, results) => {
+    pool.query(`INSERT INTO public.marker_cluster(location) VALUES (ST_GeomFromText('Point(${coor[1]} ${coor[0]})'));`, (error, results) => {
         if (error) {
             throw error
         }
         if (total % 1000 == 0) {
             console.log(total)
         }
+
         total++
     })
 

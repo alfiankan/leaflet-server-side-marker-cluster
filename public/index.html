@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Supercluster Leaflet demo</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.3/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.3/leaflet.js"></script>
+
+
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+        }
+
+        .marker-cluster-small {
+            background-color: rgba(181, 226, 140, 0.6);
+        }
+
+        .marker-cluster-small div {
+            background-color: rgba(110, 204, 57, 0.6);
+        }
+
+        .marker-cluster-medium {
+            background-color: rgba(241, 211, 87, 0.6);
+        }
+
+        .marker-cluster-medium div {
+            background-color: rgba(240, 194, 12, 0.6);
+        }
+
+        .marker-cluster-large {
+            background-color: rgba(253, 156, 115, 0.6);
+        }
+
+        .marker-cluster-large div {
+            background-color: rgba(241, 128, 23, 0.6);
+        }
+
+        .marker-cluster {
+            background-clip: padding-box;
+            border-radius: 20px;
+        }
+
+        .marker-cluster div {
+            width: 30px;
+            height: 30px;
+            margin-left: 5px;
+            margin-top: 5px;
+
+            text-align: center;
+            border-radius: 15px;
+            font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        }
+
+        .marker-cluster span {
+            line-height: 30px;
+        }
+
+        .box {
+            position: absolute;
+            top: 0;
+            z-index: 9999;
+            text-align: center;
+            left: 50%;
+            margin-left: -75px;
+            /* half of the width */
+            background-color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="box" id="loading" style="font-size: x-large;"> Timer : ...</div>
+    <div id="map" style="height:600px;"></div>
+    <script>
+        const loading = document.getElementById('loading')
+        let isLoading = false
+        function getJSON(url, callback) {
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'json';
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.onload = function () {
+                if (xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300 && xhr.response) {
+                    callback(xhr.response);
+                }
+            };
+            xhr.send();
+        }
+
+        const map = L.map('map').setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const markers = L.geoJson(null, {
+            pointToLayer: createClusterIcon
+        }).addTo(map);
+
+
+        function update() {
+
+            if (isLoading) {
+                return
+            }
+            isLoading = true
+
+            const bounds = map.getBounds();
+            console.log(bounds)
+            console.log({
+                bbox: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()],
+                zoom: map.getZoom()
+            });
+
+            console.log(bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth(), map.getZoom())
+
+            loading.innerHTML = `Processing ...`
+            const before = new Date();
+            getJSON(`http://localhost:3000/points?west=${bounds.getWest()}&south=${bounds.getSouth()}&east=${bounds.getEast()}&north=${bounds.getNorth()}&zoom=${map.getZoom()}`, (geojson) => {
+                console.log(geojson);
+                markers.clearLayers();
+                markers.addData(geojson);
+
+                const now = new Date();
+                const diff = now - before;
+                loading.innerHTML = `Took  ${diff} milliseconds`
+                isLoading = false
+            });
+        }
+
+        map.on('moveend', update);
+
+        map.whenReady(update);
+
+
+        function createClusterIcon(feature, latlng) {
+
+            if (!feature.properties.cluster) {
+
+                const tweetIcon = L.icon({
+                    iconUrl: 'http://localhost:3000/twitter.svg',
+                    iconSize: [40, 40], // size of the icon
+                });
+                let singleMarker = L.marker(latlng, { icon: tweetIcon }).bindPopup(feature.properties.name);
+                singleMarker.on('mouseover', function (e) {
+                    this.openPopup();
+                });
+                singleMarker.on('mouseout', function (e) {
+                    this.closePopup();
+                });
+                return singleMarker
+            }
+
+            const count = feature.properties.point_count;
+            const size =
+                count < 100 ? 'small' :
+                    count < 1000 ? 'medium' : 'large';
+            const icon = L.divIcon({
+                html: `<div><span>${feature.properties.point_count_abbreviated}</span></div>`,
+                className: `marker-cluster marker-cluster-${size}`,
+                iconSize: L.point(40, 40)
+            });
+
+            return L.marker(latlng, { icon });
+        }
+
+
+    </script>
+</body>
+
+</html>

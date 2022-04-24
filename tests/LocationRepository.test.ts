@@ -1,4 +1,4 @@
-import { Locations } from "../app/repositories/Locations"
+import { Locations } from "../api/repositories/Locations"
 import { createPgPool } from "./stub"
 
 describe('location repository', () => {
